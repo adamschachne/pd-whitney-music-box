@@ -2,7 +2,8 @@ const sketch = (p5: p5) => {
 	const NUM_POINTS = 50;
 	let radius: number;
 	let center: { x: number, y: number };
-	let maxCircleWidth: number;
+	let maxCircleWidth : number;
+	let minCircleWidth : number;
 	let canvas : HTMLCanvasElement;
 	let rate : number;
 
@@ -28,7 +29,8 @@ const sketch = (p5: p5) => {
 		p5.strokeWeight(0.7);
 		p5.colorMode(p5.HSB, 1);
 		p5.angleMode(p5.DEGREES);
-		maxCircleWidth = 25;
+		minCircleWidth = 5;
+		maxCircleWidth = 35;
 		resize(); // initialize canvas size and variables		
 	}
 
@@ -38,23 +40,23 @@ const sketch = (p5: p5) => {
 
 	p5.draw = () => {
 		p5.background(p5.color(0,0,0.59));		
-		p5.line(center.x, center.y, center.x + radius + maxCircleWidth, center.y);
+		p5.line(center.x, center.y, center.x + radius + maxCircleWidth/2, center.y);
 
 		// @ts-ignore millis between each frame
-		//let deltaTime = window.performance.now() - canvas._pInst._lastFrameTime;
+		// let deltaTime = window.performance.now() - canvas._pInst._lastFrameTime;
 		let millis = window.performance.now();
 		let time = millis * rate;
+		let inverse = 1 / NUM_POINTS;
 
 		for (let i = 0; i < NUM_POINTS; i++) {
-			let distance = (i + 1) / NUM_POINTS;
-			let angle = time * distance;
-			let len = radius * (1 + 1 / NUM_POINTS - distance);
+			let angle = time * (1 - i * inverse);
+			let len = radius * (inverse * (i+1)); // length from center of canvas
 
 			let x = (center.x + p5.cos(angle) * len);
 			let y = (center.y + p5.sin(angle) * len);
-			
-			let cWidth = maxCircleWidth - distance * 16;
-			let hue = distance;
+						
+			let cWidth = minCircleWidth + (maxCircleWidth - minCircleWidth)*(i+1)*inverse;
+			let hue = i * inverse;
 			let saturation = 1;
 			let brightness = 1;
 

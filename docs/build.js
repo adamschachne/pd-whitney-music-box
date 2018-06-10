@@ -3,6 +3,7 @@ var sketch = function (p5) {
     var radius;
     var center;
     var maxCircleWidth;
+    var minCircleWidth;
     var canvas;
     var rate;
     p5.preload = function () {
@@ -22,7 +23,8 @@ var sketch = function (p5) {
         p5.strokeWeight(0.7);
         p5.colorMode(p5.HSB, 1);
         p5.angleMode(p5.DEGREES);
-        maxCircleWidth = 25;
+        minCircleWidth = 5;
+        maxCircleWidth = 35;
         resize();
     };
     p5.windowResized = function () {
@@ -30,17 +32,17 @@ var sketch = function (p5) {
     };
     p5.draw = function () {
         p5.background(p5.color(0, 0, 0.59));
-        p5.line(center.x, center.y, center.x + radius + maxCircleWidth, center.y);
+        p5.line(center.x, center.y, center.x + radius + maxCircleWidth / 2, center.y);
         var millis = window.performance.now();
         var time = millis * rate;
+        var inverse = 1 / NUM_POINTS;
         for (var i = 0; i < NUM_POINTS; i++) {
-            var distance = (i + 1) / NUM_POINTS;
-            var angle = time * distance;
-            var len = radius * (1 + 1 / NUM_POINTS - distance);
+            var angle = time * (1 - i * inverse);
+            var len = radius * (inverse * (i + 1));
             var x = (center.x + p5.cos(angle) * len);
             var y = (center.y + p5.sin(angle) * len);
-            var cWidth = maxCircleWidth - distance * 16;
-            var hue = distance;
+            var cWidth = minCircleWidth + (maxCircleWidth - minCircleWidth) * (i + 1) * inverse;
+            var hue = i * inverse;
             var saturation = 1;
             var brightness = 1;
             p5.fill(p5.color(hue, saturation, brightness));
