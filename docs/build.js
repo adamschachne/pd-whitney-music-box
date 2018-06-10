@@ -9,7 +9,7 @@ var sketch = function (p5) {
     };
     function resize() {
         console.log(p5.windowWidth, p5.windowHeight);
-        radius = 0.8 * (p5.windowWidth / 2);
+        radius = Math.min(p5.windowWidth, p5.windowHeight) / 2 - maxCircleWidth;
         center = {
             x: p5.windowWidth / 2,
             y: p5.windowHeight / 2
