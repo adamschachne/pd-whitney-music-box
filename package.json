@@ -1,0 +1,21 @@
+{
+  "name": "pd-whitney-music-box",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "start": "live-server --open=./docs",
+    "dev": "concurrently \"live-server --watch=./docs --open=./docs\" \" tsc --watch\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/adamschachne/pd-whitney-music-box.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {},
+  "devDependencies": {
+    "concurrently": "^3.5.1",
+    "live-server": "^1.2.0",
+    "typescript": "^2.9.1"
+  }
+}

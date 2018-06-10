@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>whitney_music_box</title>
+
+    <!-- Generated javascript library includes -->
+    <script type="application/javascript" src="./whitney_music_box.js"></script>
+    <style>
+      .widget { max-width: 900px; margin: auto; }
+      .row { width: 100%; margin-bottom: 10px; }
+      .col { display: inline-block; }
+      .title { width: 80%; margin: 0 auto; }
+      .transport { padding-left: 10px; }
+      .parameter-name { width: 35%; text-align: right; }
+      .parameter-slider { width: 45%; padding-left: 10px; }
+      .parameter-slider input { vertical-align: middle; width: 100%; }
+      .parameter-value { width: 10%; padding-left: 10px; text-align: left; }
+      .link { margin: 10px 10px 0 0; float: right; }
+      span { text-align: right; }
+    </style>
+
+    <script type="text/javascript">
+
+      var webAssemblySupported = (typeof WebAssembly === 'object');
+      var heavyModule = null;
+      var loader = null;
+
+      window.onload = function() {
+        if (webAssemblySupported) {
+          heavyModule = whitney_music_box_Module();
+          heavyModule['onRuntimeInitialized'] = moduleLoaded;
+        }
+        else {
+          console.warn("heavy: web assembly not found, falling back to asm.js");
+
+          var script = document.createElement('script');
+          script.src = "whitney_music_box.asm.js";
+          script.onload = function() {
+            heavyModule = whitney_music_box_AsmModule();
+            moduleLoaded();
+          }
+          document.body.appendChild(script);
+        }
+        document.getElementById("transportButton").style.visibility = "hidden";
+      }
+
+      function moduleLoaded() {
+        loader = new heavyModule.AudioLibLoader();
+        loader.init({
+          // optional: set audio processing block size, default is 2048
+          blockSize: 2048,
+          // optional: provide a callback handler for [print] messages
+          printHook: onPrint,
+          // optional: provide a callback handler for [s {sendName} @hv_param] messages
+          sendHook: onFloatMessage,
+          // optional: pass an existing web audio context, otherwise a new one
+          // will be constructed.
+          webAudioContext: null
+        });
+        updateSlider_freq(440.0);
+        updateSlider_gain(80.0);
+        document.getElementById("transportButton").style.visibility = "visible";
+      }
+
+      function start() {
+        loader.start();
+      }
+
+      function stop() {
+        loader.stop();
+      }
+
+      function toggleTransport(element) {
+        (loader.isPlaying) ? stop() : start();
+      }
+
+      function onPrint(message) {
+        console.log(message);
+      }
+
+      function onFloatMessage(sendName, floatValue) {
+        console.log(sendName, floatValue);
+      }
+      // Generated Parameter Update Methods
+      function updateSlider_freq(value) {
+        document.getElementById("value_freq").textContent = Number(value).toFixed(2);
+        loader.audiolib.setFloatParameter("freq", value);
+      }
+
+      function updateSlider_gain(value) {
+        document.getElementById("value_gain").textContent = Number(value).toFixed(2);
+        loader.audiolib.setFloatParameter("gain", value);
+      }
+
+    </script>
+  </head>
+  <body>
+    <div class="widget">
+      <div class="row title">
+        <div class="col"><h2>whitney_music_box</h2></div>
+        <div class="col transport">
+          <label>
+            start / stop
+            <input type="checkbox" id="transportButton" onchange="toggleTransport();">
+          </label>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col parameter-name">freq</div>
+        <div class="col parameter-slider">
+          <input id="parameter_freq" type="range" min="0.0" max="2000.0" step="0.01" value="440.0" onchange="updateSlider_freq(value);" oninput="updateSlider_freq(value)">
+        </div>
+        <div class="col parameter-value" id="value_freq">440.0</div>
+      </div>
+      <div class="row">
+        <div class="col parameter-name">gain</div>
+        <div class="col parameter-slider">
+          <input id="parameter_gain" type="range" min="0.0" max="100.0" step="0.01" value="80.0" onchange="updateSlider_gain(value);" oninput="updateSlider_gain(value)">
+        </div>
+        <div class="col parameter-value" id="value_gain">80.0</div>
+      </div>
+      <div class="row">
+        <span class="link"><em>powered by <a href="https://enzienaudio.com"><strong>heavy</strong></em></a></span>
+      </div>
+    </div>
+  </body>
+</html>

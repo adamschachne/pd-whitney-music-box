@@ -1,0 +1,10 @@
+#N canvas 448 184 925 717 10;
+#X obj 42 84 osc~;
+#X obj 42 28 r freq @hv_param 0 2000 440;
+#X obj 68 180 out~;
+#X obj 121 228 s volume @hv_param;
+#X obj 121 152 r gain @hv_param 0 100 80;
+#X connect 0 0 2 0;
+#X connect 1 0 0 0;
+#X connect 2 2 3 0;
+#X connect 4 0 2 2;
