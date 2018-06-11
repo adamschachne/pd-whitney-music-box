@@ -58,8 +58,10 @@
           // will be constructed.
           webAudioContext: null
         });
+        updateSlider_duration(200.0);
+        updateSlider_frequency(30.0);
         updateSlider_gain(80.0);
-        updateSlider_note(0.0);
+        updateSlider_id(0.0);
         updateSlider_velocity(0.0);
         document.getElementById("transportButton").style.visibility = "visible";
       }
@@ -84,14 +86,24 @@
         console.log(sendName, floatValue);
       }
       // Generated Parameter Update Methods
+      function updateSlider_duration(value) {
+        document.getElementById("value_duration").textContent = Number(value).toFixed(2);
+        loader.audiolib.setFloatParameter("duration", value);
+      }
+
+      function updateSlider_frequency(value) {
+        document.getElementById("value_frequency").textContent = Number(value).toFixed(2);
+        loader.audiolib.setFloatParameter("frequency", value);
+      }
+
       function updateSlider_gain(value) {
         document.getElementById("value_gain").textContent = Number(value).toFixed(2);
         loader.audiolib.setFloatParameter("gain", value);
       }
 
-      function updateSlider_note(value) {
-        document.getElementById("value_note").textContent = Number(value).toFixed(2);
-        loader.audiolib.setFloatParameter("note", value);
+      function updateSlider_id(value) {
+        document.getElementById("value_id").textContent = Number(value).toFixed(2);
+        loader.audiolib.setFloatParameter("id", value);
       }
 
       function updateSlider_velocity(value) {
@@ -113,6 +125,20 @@
         </div>
       </div>
       <div class="row">
+        <div class="col parameter-name">duration</div>
+        <div class="col parameter-slider">
+          <input id="parameter_duration" type="range" min="0.0" max="1000.0" step="0.01" value="200.0" onchange="updateSlider_duration(value);" oninput="updateSlider_duration(value)">
+        </div>
+        <div class="col parameter-value" id="value_duration">200.0</div>
+      </div>
+      <div class="row">
+        <div class="col parameter-name">frequency</div>
+        <div class="col parameter-slider">
+          <input id="parameter_frequency" type="range" min="20.0" max="1000.0" step="0.01" value="30.0" onchange="updateSlider_frequency(value);" oninput="updateSlider_frequency(value)">
+        </div>
+        <div class="col parameter-value" id="value_frequency">30.0</div>
+      </div>
+      <div class="row">
         <div class="col parameter-name">gain</div>
         <div class="col parameter-slider">
           <input id="parameter_gain" type="range" min="0.0" max="100.0" step="0.01" value="80.0" onchange="updateSlider_gain(value);" oninput="updateSlider_gain(value)">
@@ -120,11 +146,11 @@
         <div class="col parameter-value" id="value_gain">80.0</div>
       </div>
       <div class="row">
-        <div class="col parameter-name">note</div>
+        <div class="col parameter-name">id</div>
         <div class="col parameter-slider">
-          <input id="parameter_note" type="range" min="0.0" max="100.0" step="0.01" value="0.0" onchange="updateSlider_note(value);" oninput="updateSlider_note(value)">
+          <input id="parameter_id" type="range" min="0.0" max="100.0" step="0.01" value="0.0" onchange="updateSlider_id(value);" oninput="updateSlider_id(value)">
         </div>
-        <div class="col parameter-value" id="value_note">0.0</div>
+        <div class="col parameter-value" id="value_id">0.0</div>
       </div>
       <div class="row">
         <div class="col parameter-name">velocity</div>

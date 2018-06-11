@@ -1,9 +1,9 @@
 var HeavyLoader = (function () {
-    function HeavyLoader() {
-        this.heavyArray = [];
+    function HeavyLoader(numModules) {
+        this.heavyArray = new Array(numModules);
         this.webAssemblySupported = (typeof WebAssembly === 'object');
     }
-    HeavyLoader.prototype.loadModule = function (gain, note, velocity, callback) {
+    HeavyLoader.prototype.loadModule = function (gain, index, freq, duration, velocity, finishedLoading, done) {
         var _this = this;
         if (this.webAssemblySupported) {
             var heavyModule_1 = whitney_music_box_Module();
@@ -13,19 +13,25 @@ var HeavyLoader = (function () {
                 loader_1.init({
                     blockSize: 2048,
                     printHook: function (message) {
-                        console.log(message);
                     },
                     sendHook: function (sendName, floatValue) {
-                        console.log(sendName, floatValue);
+                        if (sendName === "done") {
+                            done(floatValue);
+                        }
+                        else {
+                            console.log(sendName, floatValue);
+                        }
                     },
                     webAudioContext: null
                 });
-                loader_1.audiolib.setFloatParameter("gain", gain);
-                loader_1.audiolib.setFloatParameter("note", note);
-                loader_1.audiolib.setFloatParameter("velocity", velocity);
                 loader_1.start();
-                _this.heavyArray.push({ heavyModule: heavyModule_1, loader: loader_1 });
-                callback();
+                loader_1.audiolib.setFloatParameter("gain", gain);
+                loader_1.audiolib.setFloatParameter("id", index);
+                loader_1.audiolib.setFloatParameter("frequency", freq);
+                loader_1.audiolib.setFloatParameter("duration", freq);
+                loader_1.stop();
+                _this.heavyArray[index] = { heavyModule: heavyModule_1, loader: loader_1 };
+                finishedLoading();
             };
         }
         else {
@@ -41,16 +47,23 @@ var HeavyLoader = (function () {
                         console.log(message);
                     },
                     sendHook: function (sendName, floatValue) {
-                        console.log(sendName, floatValue);
+                        if (sendName === "done") {
+                            done(floatValue);
+                        }
+                        else {
+                            console.log(sendName, floatValue);
+                        }
                     },
                     webAudioContext: null
                 });
-                loader.audiolib.setFloatParameter("gain", gain);
-                loader.audiolib.setFloatParameter("note", note);
-                loader.audiolib.setFloatParameter("velocity", velocity);
                 loader.start();
-                _this.heavyArray.push({ heavyModule: heavyModule, loader: loader });
-                callback();
+                loader.audiolib.setFloatParameter("gain", gain);
+                loader.audiolib.setFloatParameter("id", index);
+                loader.audiolib.setFloatParameter("frequency", freq);
+                loader.audiolib.setFloatParameter("duration", freq);
+                loader.stop();
+                _this.heavyArray[index] = { heavyModule: heavyModule, loader: loader };
+                finishedLoading();
             };
             document.body.appendChild(script);
         }
@@ -71,15 +84,22 @@ var sketch = function (p5) {
     var numLoading;
     var startTime;
     var playing;
+    var lastPlayed;
+    var baseFreq;
+    var millisLastFrame;
+    var buf = 0.00005;
     p5.preload = function () {
-        heavyLoader = new HeavyLoader();
+        heavyLoader = new HeavyLoader(num_points);
         console.log(heavyLoader);
         doneLoading = false;
         numLoading = num_points;
-        playing = [];
+        playing = new Array(num_points);
+        lastPlayed = new Array(num_points);
+        baseFreq = 35;
         for (var i = 0; i < num_points; i++) {
-            playing.push(false);
-            heavyLoader.loadModule(75, 90 - i, 0, finishedLoading);
+            playing[i] = false;
+            lastPlayed[i] = -1;
+            heavyLoader.loadModule(75, i, baseFreq, 200, 0, finishedLoading, doneHook);
         }
     };
     function resize() {
@@ -94,22 +114,23 @@ var sketch = function (p5) {
         numLoading--;
         if (numLoading === 0) {
             doneLoading = true;
-            startTime = window.performance.now();
+            startTime = window.performance.now() - 1000;
+            millisLastFrame = startTime;
         }
     }
+    function doneHook(val) {
+        stopNote(val);
+    }
     function playNote(i, velocity) {
+        heavyLoader.heavyArray[i].loader.audiolib.setFloatParameter("velocity", velocity);
         heavyLoader.heavyArray[i].loader.start();
         playing[i] = true;
-        setTimeout(function () {
-            heavyLoader.heavyArray[i].loader.audiolib.setFloatParameter("velocity", velocity);
-        });
     }
     function stopNote(i) {
-        heavyLoader.heavyArray[i].loader.audiolib.setFloatParameter("velocity", 0);
         playing[i] = false;
         setTimeout(function () {
             heavyLoader.heavyArray[i].loader.stop();
-        });
+        }, 50);
     }
     p5.setup = function () {
         rate = 0.05;
@@ -134,29 +155,31 @@ var sketch = function (p5) {
             return;
         }
         var millis = window.performance.now() - startTime;
+        var deltaTime = millis - millisLastFrame;
         var time = millis * rate;
+        millisLastFrame = millis;
         for (var i = 0; i < num_points; i++) {
             var angle = time * (1 - i * inverse);
             var len = radius * (inverse * (i + 1));
-            var x = (center.x + p5.cos(angle) * len);
-            var y = (center.y + p5.sin(angle) * len);
+            var cos = p5.cos(angle);
+            var sin = p5.sin(angle);
+            var x = (center.x + cos * len);
+            var y = (center.y + sin * len);
             var cWidth = minCircleWidth + (maxCircleWidth - minCircleWidth) * (i + 1) * inverse;
             var hue = i * inverse;
             var saturation = 1;
             var brightness = 1;
-            var strumDist = p5.dist(x, y, center.x + len, center.y);
-            if (strumDist < 10) {
-                if (!playing[i]) {
-                    playNote(i, 1);
-                }
-            }
-            else {
-                if (playing[i]) {
-                    stopNote(i);
-                }
-            }
             p5.fill(p5.color(hue, saturation, brightness));
             p5.ellipse(x, y, cWidth);
+            if (lastPlayed[i] > 0 && cos <= -1 + buf && cos >= -1 - buf) {
+                lastPlayed[i] = -1;
+            }
+            if (lastPlayed[i] < 0 && !playing[i]) {
+                if (cos <= 1 + buf && cos >= 1 - buf) {
+                    playNote(i, 1);
+                    lastPlayed[i] = 1;
+                }
+            }
         }
     };
 };

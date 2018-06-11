@@ -6,13 +6,13 @@ class HeavyLoader {
   webAssemblySupported : boolean;
   heavyArray : Array<{heavyModule : any, loader : any}>;
 
-  constructor() {
-    this.heavyArray = [];
+  constructor(numModules : number) {
+    this.heavyArray = new Array(numModules);
     // @ts-ignore    
     this.webAssemblySupported = (typeof WebAssembly === 'object');
   }
 
-  loadModule(gain : number, note : number, velocity : number, callback : Function) {
+  loadModule(gain : number, index : number, freq : number, duration : number, velocity : number, finishedLoading : Function, done : Function) {
     if (this.webAssemblySupported) {      
         let heavyModule = whitney_music_box_Module();
         let loader;
@@ -22,23 +22,31 @@ class HeavyLoader {
           // optional: set audio processing block size, default is 2048
           blockSize: 2048,
           // optional: provide a callback handler for [print] messages
-          printHook: (message : any) => {
-            console.log(message);
+          printHook: (message : string) => {
+            // console.log(message);
           },
           // optional: provide a callback handler for [s {sendName} @hv_param] messages
           sendHook: (sendName : any, floatValue : any) => {
-            console.log(sendName, floatValue);
+            if (sendName === "done") {
+              done(floatValue);
+            }
+            else {
+              console.log(sendName, floatValue);
+            }
           },
           // optional: pass an existing web audio context, otherwise a new one
           // will be constructed.
           webAudioContext: null          
-        });              
-        loader.audiolib.setFloatParameter("gain", gain);
-        loader.audiolib.setFloatParameter("note", note);
-        loader.audiolib.setFloatParameter("velocity", velocity);
+        });
         loader.start();
-        this.heavyArray.push({ heavyModule, loader });
-        callback();
+        loader.audiolib.setFloatParameter("gain", gain);
+        loader.audiolib.setFloatParameter("id", index);
+        loader.audiolib.setFloatParameter("frequency", freq);
+        loader.audiolib.setFloatParameter("duration", freq);
+        loader.stop();
+        // loader.audiolib.setFloatParameter("velocity", velocity);        
+        this.heavyArray[index] = { heavyModule, loader };
+        finishedLoading();
       }      
     }
     else {
@@ -57,18 +65,26 @@ class HeavyLoader {
           },
           // optional: provide a callback handler for [s {sendName} @hv_param] messages
           sendHook: (sendName : any, floatValue : any) => {
-            console.log(sendName, floatValue);
+            if (sendName === "done") {
+              done(floatValue);
+            }
+            else {
+              console.log(sendName, floatValue);
+            }
           },
           // optional: pass an existing web audio context, otherwise a new one
           // will be constructed.
           webAudioContext: null
         });
-        loader.audiolib.setFloatParameter("gain", gain);
-        loader.audiolib.setFloatParameter("note", note);
-        loader.audiolib.setFloatParameter("velocity", velocity);
         loader.start();
-        this.heavyArray.push({ heavyModule, loader });
-        callback();
+        loader.audiolib.setFloatParameter("gain", gain);
+        loader.audiolib.setFloatParameter("id", index);
+        loader.audiolib.setFloatParameter("frequency", freq);
+        loader.audiolib.setFloatParameter("duration", freq);
+        loader.stop();
+        // loader.audiolib.setFloatParameter("velocity", velocity);      
+        this.heavyArray[index] = { heavyModule, loader };
+        finishedLoading();
       }
       document.body.appendChild(script);
     }

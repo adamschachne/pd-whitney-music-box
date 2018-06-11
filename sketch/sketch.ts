@@ -13,19 +13,28 @@ const sketch = (p5: p5) => {
 	let heavyLoader: HeavyLoader;
 	let numLoading: number;
 	let startTime: number;
-	let playing : Array<boolean>;
+	let playing: Array<boolean>;
+	let lastPlayed: Array<number>;
+	let baseFreq: number;
+	let millisLastFrame: number;
+	const buf = 0.00005;
 
 	p5.preload = () => {
-		heavyLoader = new HeavyLoader();
+		// prepare array of num_points
+		heavyLoader = new HeavyLoader(num_points);
 		console.log(heavyLoader);
 
 		// redo the callback/async system TODO
 		doneLoading = false;
 		numLoading = num_points;
-		playing = [];
+		playing = new Array(num_points);
+		lastPlayed = new Array(num_points);
+
+		baseFreq = 35;
 		for (let i = 0; i < num_points; i++) {
-			playing.push(false);
-			heavyLoader.loadModule(75, 90 - i, 0, finishedLoading);
+			playing[i] = false;
+			lastPlayed[i] = -1;
+			heavyLoader.loadModule(75, i, baseFreq, 200, 0, finishedLoading, doneHook);
 		}
 	}
 
@@ -43,24 +52,33 @@ const sketch = (p5: p5) => {
 		numLoading--;
 		if (numLoading === 0) {
 			doneLoading = true;
-			startTime = window.performance.now();
+			startTime = window.performance.now() - 1000;
+			millisLastFrame = startTime;
 		}
 	}
 
-	function playNote(i : number, velocity : number) {
-		heavyLoader.heavyArray[i].loader.start();
-		playing[i] = true;
-		setTimeout(() => {
-			heavyLoader.heavyArray[i].loader.audiolib.setFloatParameter("velocity", velocity);			
-		})		
+	function doneHook(val: number) {
+		// console.log("finished playing index: ", val);
+		stopNote(val);
 	}
 
-	function stopNote(i : number) {		
-		heavyLoader.heavyArray[i].loader.audiolib.setFloatParameter("velocity", 0);
+	function playNote(i: number, velocity: number) {
+		heavyLoader.heavyArray[i].loader.audiolib.setFloatParameter("velocity", velocity);
+		heavyLoader.heavyArray[i].loader.start();
+		playing[i] = true;
+		// setTimeout(() => {
+			
+		// }, 0);
+	}
+
+	function stopNote(i: number) {
+		// heavyLoader.heavyArray[i].loader.audiolib.setFloatParameter("velocity", 0);
 		playing[i] = false;
 		setTimeout(() => {
-			heavyLoader.heavyArray[i].loader.stop();			
-		})
+			// if (heavyLoader.heavyArray[i].loader.isPlaying) {
+				heavyLoader.heavyArray[i].loader.stop();
+			// }
+		}, 50);
 	}
 
 	p5.setup = () => {
@@ -89,36 +107,48 @@ const sketch = (p5: p5) => {
 			p5.text("Loading...", center.x, center.y - 1);
 			return;
 		}
+
 		// @ts-ignore millis between each frame
 		// let deltaTime = window.performance.now() - canvas._pInst._lastFrameTime;
 		let millis = window.performance.now() - startTime;
+		let deltaTime = millis - millisLastFrame;
 		let time = millis * rate;
+
+		millisLastFrame = millis;
 
 		for (let i = 0; i < num_points; i++) {
 			let angle = time * (1 - i * inverse);
 			let len = radius * (inverse * (i + 1)); // length from center of canvas
 
-			let x = (center.x + p5.cos(angle) * len);
-			let y = (center.y + p5.sin(angle) * len);			
+			let cos = p5.cos(angle);
+			let sin = p5.sin(angle);
+
+			let x = (center.x + cos * len);
+			let y = (center.y + sin * len);
 
 			let cWidth = minCircleWidth + (maxCircleWidth - minCircleWidth) * (i + 1) * inverse;
 			let hue = i * inverse;
 			let saturation = 1;
 			let brightness = 1;
 
-			let strumDist = p5.dist(x, y, center.x + len, center.y);
-			if (strumDist < 10) {
-				if (!playing[i]) { // only send play if it's not playing					
-					playNote(i, 1);
-				}				
-			} else {
-				if (playing[i]) { // only send stop if it's playing
-					stopNote(i);
-				}	
-			}
-
 			p5.fill(p5.color(hue, saturation, brightness));
 			p5.ellipse(x, y, cWidth);
+
+			// free up lastPlayed
+			if (lastPlayed[i] > 0 && cos <= -1 + buf && cos >= -1 - buf) {
+				// console.log("free: ", i)
+				lastPlayed[i] = -1;
+			}
+
+			// check last played and is not playing
+			if (lastPlayed[i] < 0 && !playing[i]) {
+				// check is on strummer
+				if (cos <= 1 + buf && cos >= 1 - buf) {
+					playNote(i, 1);
+					lastPlayed[i] = 1;
+					// console.log("playing: ", i)
+				}
+			}	
 		}
 	}
 }
