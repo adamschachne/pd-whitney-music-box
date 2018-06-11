@@ -6,6 +6,12 @@
     "outFile": "./docs/build.js",
     "rootDir": "./sketch/",
     "sourceMap": false,
-    "noImplicitAny": true
+    "noImplicitAny": true,
+    "lib": [
+      "dom",
+      "es2015",
+      "es5",
+      "es6"
+    ]
   }
 }
