@@ -17,8 +17,15 @@ const sketch = (p5: p5) => {
 	let lastPlayed: Array<number>;
 	let baseFreq: number;
 	let millisLastFrame: number;
-	let timeSlider : any;
-	let period : number;
+	let timeSlider: any;
+	let period: number;
+	let invertButton: any;
+	let inverted: boolean;
+	let pauseButton: any;
+	let paused: boolean;
+	let millis: number;
+	let deltaTime: number;
+	let time: number;
 
 	const buf = 0.00008;
 	// time before a note can be played again
@@ -27,19 +34,21 @@ const sketch = (p5: p5) => {
 	p5.preload = () => {
 		// prepare array of num_points
 		heavyLoader = new HeavyLoader(num_points);
-		//console.log(heavyLoader);
+		console.log(heavyLoader);
 
 		// redo the callback/async system TODO
+		paused = false;
 		doneLoading = false;
 		numLoading = num_points;
 		playing = new Array(num_points);
 		lastPlayed = new Array(num_points);
-
+		inverted = false;
 		baseFreq = 35;
 		for (let i = 0; i < num_points; i++) {
 			playing[i] = false;
 			lastPlayed[i] = -1;
 			heavyLoader.loadModule(80, i, baseFreq * (num_points - i), 150, 150, 0, finishedLoading, doneHook);
+			//heavyLoader.loadModule(80, i, baseFreq + baseFreq * i, 150, 150, 0, finishedLoading, doneHook);
 		}
 	}
 
@@ -63,7 +72,7 @@ const sketch = (p5: p5) => {
 				doneLoading = true;
 				startTime = window.performance.now();
 				millisLastFrame = startTime;
-			}, 1500);			
+			}, 1500);
 		}
 	}
 
@@ -92,12 +101,80 @@ const sketch = (p5: p5) => {
 		}, 50);
 	}
 
+	function invertPitches() {
+		inverted = !inverted;
+
+		if (inverted) {
+			heavyLoader.heavyArray.forEach((e, i) => {
+				e.loader.audiolib.setFloatParameter("frequency", baseFreq + baseFreq * i);
+			});
+		} else {
+			heavyLoader.heavyArray.forEach((e, i) => {
+				e.loader.audiolib.setFloatParameter("frequency", baseFreq * (num_points - i));
+			});
+		}
+	}
+
+	function togglePause() {
+		paused = !paused;
+		if (paused) {
+			pauseButton.html("resume");
+		} else {
+			pauseButton.html("pause");
+		}
+	}
+
+	function drawCircles() {
+		for (let i = 0; i < num_points; i++) {
+			let angle = time * (1 - i * inverse);
+			let cos = p5.cos(angle);
+			let sin = p5.sin(angle);
+
+			if (!paused) {
+				if (!playing[i] && millis < lastPlayed[i] || millis - lastPlayed[i] > wait) {
+					// check is on strummer
+					if (cos <= 1 + buf && cos >= 1 - buf) {
+						playNote(i, 1);
+						lastPlayed[i] = millis;
+						// console.log("playing: ", i)
+					}
+				}
+			}
+
+			let len = radius * (inverse * (i + 1)); // length from center of canvas
+			let x = (center.x + cos * len);
+			let y = (center.y + sin * len);
+
+			let cWidth = minCircleWidth + (maxCircleWidth - minCircleWidth) * (i + 1) * inverse;
+			let hue = i * inverse;
+			//let saturation = 1;
+			let saturation = 1;
+			if (millis - lastPlayed[i] < 200) {
+				saturation = 0.2;
+			}
+
+			let brightness = 1;
+
+			p5.fill(p5.color(hue, saturation, brightness));
+			p5.ellipse(x, y, cWidth);
+		}
+	}
+
 	p5.setup = () => {
 		rate = 0.08;
 		period = num_points * 360;
 		timeSlider = p5.createSlider(0, period + 10, 0, 1);
 		timeSlider.position(10, p5.windowHeight - 30);
 		timeSlider.style('width', p5.windowWidth - 30 + "px");
+
+		invertButton = p5.createButton('invert pitches');
+		invertButton.position(100, 80);
+		invertButton.mousePressed(invertPitches);
+
+		pauseButton = p5.createButton('pause');
+		pauseButton.position(100, 50);
+		pauseButton.mousePressed(togglePause);
+
 		// period = num_points * 360;
 		canvas = p5.createCanvas(0, 0);
 		p5.strokeWeight(0.7);
@@ -115,7 +192,7 @@ const sketch = (p5: p5) => {
 
 	p5.draw = () => {
 		p5.background(p5.color(0, 0, 0.59));
-		p5.line(center.x, center.y, center.x + radius + maxCircleWidth / 2, center.y);	
+		p5.line(center.x, center.y, center.x + radius + maxCircleWidth / 2, center.y);
 
 		if (!doneLoading) {
 			p5.textSize(32);
@@ -125,53 +202,23 @@ const sketch = (p5: p5) => {
 
 		// @ts-ignore millis between each frame
 		// let deltaTime = window.performance.now() - canvas._pInst._lastFrameTime;
-		let millis = window.performance.now() - startTime + 200;
-		let deltaTime = millis - millisLastFrame;
-
+		millis = window.performance.now() - startTime + 200;
+		deltaTime = millis - millisLastFrame;
 		millisLastFrame = millis;
+
+		if (paused) {
+			time = timeSlider.value();
+			drawCircles();
+			return;
+		}
+
 		// current time is the slider value this frame
-		let time = timeSlider.value();
+		time = timeSlider.value();
 		// set the slider value to be current time + delta
 		timeSlider.value((time + deltaTime * rate) % period);
-		
 
-		for (let i = 0; i < num_points; i++) {
-			
-			let angle = time * (1 - i * inverse);
-			if (i == num_points - 1) {
-				// console.log(angle);
-			}
-			let len = radius * (inverse * (i + 1)); // length from center of canvas
+		drawCircles();
 
-			let cos = p5.cos(angle);
-			let sin = p5.sin(angle);
-
-			// check last played and is not playing
-			if (!playing[i] && millis < lastPlayed[i] || millis - lastPlayed[i] > wait) {
-				// check is on strummer
-				if (cos <= 1 + buf && cos >= 1 - buf) {
-					playNote(i, 1);
-					lastPlayed[i] = millis;
-					// console.log("playing: ", i)
-				}
-			}
-
-			let x = (center.x + cos * len);
-			let y = (center.y + sin * len);
-
-			let cWidth = minCircleWidth + (maxCircleWidth - minCircleWidth) * (i + 1) * inverse;
-			let hue = i * inverse;
-			//let saturation = 1;
-			let saturation = 1;
-			if (millis - lastPlayed[i] < 200) {
-				saturation = 0.2;
-			}
-
-			let brightness = 1;
-
-			p5.fill(p5.color(hue, saturation, brightness));
-			p5.ellipse(x, y, cWidth);
-		}
 	}
 }
 

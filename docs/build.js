@@ -92,14 +92,24 @@ var sketch = function (p5) {
     var millisLastFrame;
     var timeSlider;
     var period;
+    var invertButton;
+    var inverted;
+    var pauseButton;
+    var paused;
+    var millis;
+    var deltaTime;
+    var time;
     var buf = 0.00008;
     var wait = 1000;
     p5.preload = function () {
         heavyLoader = new HeavyLoader(num_points);
+        console.log(heavyLoader);
+        paused = false;
         doneLoading = false;
         numLoading = num_points;
         playing = new Array(num_points);
         lastPlayed = new Array(num_points);
+        inverted = false;
         baseFreq = 35;
         for (var i = 0; i < num_points; i++) {
             playing[i] = false;
@@ -143,12 +153,67 @@ var sketch = function (p5) {
             heavyLoader.heavyArray[i].loader.stop();
         }, 50);
     }
+    function invertPitches() {
+        inverted = !inverted;
+        if (inverted) {
+            heavyLoader.heavyArray.forEach(function (e, i) {
+                e.loader.audiolib.setFloatParameter("frequency", baseFreq + baseFreq * i);
+            });
+        }
+        else {
+            heavyLoader.heavyArray.forEach(function (e, i) {
+                e.loader.audiolib.setFloatParameter("frequency", baseFreq * (num_points - i));
+            });
+        }
+    }
+    function togglePause() {
+        paused = !paused;
+        if (paused) {
+            pauseButton.html("resume");
+        }
+        else {
+            pauseButton.html("pause");
+        }
+    }
+    function drawCircles() {
+        for (var i = 0; i < num_points; i++) {
+            var angle = time * (1 - i * inverse);
+            var cos = p5.cos(angle);
+            var sin = p5.sin(angle);
+            if (!paused) {
+                if (!playing[i] && millis < lastPlayed[i] || millis - lastPlayed[i] > wait) {
+                    if (cos <= 1 + buf && cos >= 1 - buf) {
+                        playNote(i, 1);
+                        lastPlayed[i] = millis;
+                    }
+                }
+            }
+            var len = radius * (inverse * (i + 1));
+            var x = (center.x + cos * len);
+            var y = (center.y + sin * len);
+            var cWidth = minCircleWidth + (maxCircleWidth - minCircleWidth) * (i + 1) * inverse;
+            var hue = i * inverse;
+            var saturation = 1;
+            if (millis - lastPlayed[i] < 200) {
+                saturation = 0.2;
+            }
+            var brightness = 1;
+            p5.fill(p5.color(hue, saturation, brightness));
+            p5.ellipse(x, y, cWidth);
+        }
+    }
     p5.setup = function () {
         rate = 0.08;
         period = num_points * 360;
         timeSlider = p5.createSlider(0, period + 10, 0, 1);
         timeSlider.position(10, p5.windowHeight - 30);
         timeSlider.style('width', p5.windowWidth - 30 + "px");
+        invertButton = p5.createButton('invert pitches');
+        invertButton.position(100, 80);
+        invertButton.mousePressed(invertPitches);
+        pauseButton = p5.createButton('pause');
+        pauseButton.position(100, 50);
+        pauseButton.mousePressed(togglePause);
         canvas = p5.createCanvas(0, 0);
         p5.strokeWeight(0.7);
         p5.colorMode(p5.HSB, 1);
@@ -169,36 +234,17 @@ var sketch = function (p5) {
             p5.text("Loading...", center.x, center.y - 1);
             return;
         }
-        var millis = window.performance.now() - startTime + 200;
-        var deltaTime = millis - millisLastFrame;
+        millis = window.performance.now() - startTime + 200;
+        deltaTime = millis - millisLastFrame;
         millisLastFrame = millis;
-        var time = timeSlider.value();
-        timeSlider.value((time + deltaTime * rate) % period);
-        for (var i = 0; i < num_points; i++) {
-            var angle = time * (1 - i * inverse);
-            if (i == num_points - 1) {
-            }
-            var len = radius * (inverse * (i + 1));
-            var cos = p5.cos(angle);
-            var sin = p5.sin(angle);
-            if (!playing[i] && millis < lastPlayed[i] || millis - lastPlayed[i] > wait) {
-                if (cos <= 1 + buf && cos >= 1 - buf) {
-                    playNote(i, 1);
-                    lastPlayed[i] = millis;
-                }
-            }
-            var x = (center.x + cos * len);
-            var y = (center.y + sin * len);
-            var cWidth = minCircleWidth + (maxCircleWidth - minCircleWidth) * (i + 1) * inverse;
-            var hue = i * inverse;
-            var saturation = 1;
-            if (millis - lastPlayed[i] < 200) {
-                saturation = 0.2;
-            }
-            var brightness = 1;
-            p5.fill(p5.color(hue, saturation, brightness));
-            p5.ellipse(x, y, cWidth);
+        if (paused) {
+            time = timeSlider.value();
+            drawCircles();
+            return;
         }
+        time = timeSlider.value();
+        timeSlider.value((time + deltaTime * rate) % period);
+        drawCircles();
     };
 };
 new p5(sketch);
