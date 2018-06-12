@@ -62,6 +62,7 @@
         updateSlider_frequency(30.0);
         updateSlider_gain(80.0);
         updateSlider_id(0.0);
+        updateSlider_release(150.0);
         updateSlider_velocity(0.0);
         document.getElementById("transportButton").style.visibility = "visible";
       }
@@ -104,6 +105,11 @@
       function updateSlider_id(value) {
         document.getElementById("value_id").textContent = Number(value).toFixed(2);
         loader.audiolib.setFloatParameter("id", value);
+      }
+
+      function updateSlider_release(value) {
+        document.getElementById("value_release").textContent = Number(value).toFixed(2);
+        loader.audiolib.setFloatParameter("release", value);
       }
 
       function updateSlider_velocity(value) {
@@ -151,6 +157,13 @@
           <input id="parameter_id" type="range" min="0.0" max="100.0" step="0.01" value="0.0" onchange="updateSlider_id(value);" oninput="updateSlider_id(value)">
         </div>
         <div class="col parameter-value" id="value_id">0.0</div>
+      </div>
+      <div class="row">
+        <div class="col parameter-name">release</div>
+        <div class="col parameter-slider">
+          <input id="parameter_release" type="range" min="0.0" max="1000.0" step="0.01" value="150.0" onchange="updateSlider_release(value);" oninput="updateSlider_release(value)">
+        </div>
+        <div class="col parameter-value" id="value_release">150.0</div>
       </div>
       <div class="row">
         <div class="col parameter-name">velocity</div>

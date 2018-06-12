@@ -5,14 +5,16 @@ class HeavyLoader {
 
   webAssemblySupported : boolean;
   heavyArray : Array<{heavyModule : any, loader : any}>;
+  numModules : number;
 
   constructor(numModules : number) {
+    this.numModules = numModules;
     this.heavyArray = new Array(numModules);
     // @ts-ignore    
     this.webAssemblySupported = (typeof WebAssembly === 'object');
   }
 
-  loadModule(gain : number, index : number, freq : number, duration : number, velocity : number, finishedLoading : Function, done : Function) {
+  loadModule(gain : number, index : number, freq : number, duration : number, release : number, velocity : number, finishedLoading : Function, done : Function) {
     if (this.webAssemblySupported) {      
         let heavyModule = whitney_music_box_Module();
         let loader;
@@ -42,9 +44,10 @@ class HeavyLoader {
         loader.audiolib.setFloatParameter("gain", gain);
         loader.audiolib.setFloatParameter("id", index);
         loader.audiolib.setFloatParameter("frequency", freq);
-        loader.audiolib.setFloatParameter("duration", freq);
+        loader.audiolib.setFloatParameter("duration", duration);
+        loader.audiolib.setFloatParameter("release", release);
         loader.stop();
-        // loader.audiolib.setFloatParameter("velocity", velocity);        
+        // loader.audiolib.setFloatParameter("velocity", velocity);
         this.heavyArray[index] = { heavyModule, loader };
         finishedLoading();
       }      
@@ -80,7 +83,8 @@ class HeavyLoader {
         loader.audiolib.setFloatParameter("gain", gain);
         loader.audiolib.setFloatParameter("id", index);
         loader.audiolib.setFloatParameter("frequency", freq);
-        loader.audiolib.setFloatParameter("duration", freq);
+        loader.audiolib.setFloatParameter("duration", duration);
+        loader.audiolib.setFloatParameter("release", release);
         loader.stop();
         // loader.audiolib.setFloatParameter("velocity", velocity);      
         this.heavyArray[index] = { heavyModule, loader };

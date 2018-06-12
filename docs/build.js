@@ -1,9 +1,10 @@
 var HeavyLoader = (function () {
     function HeavyLoader(numModules) {
+        this.numModules = numModules;
         this.heavyArray = new Array(numModules);
         this.webAssemblySupported = (typeof WebAssembly === 'object');
     }
-    HeavyLoader.prototype.loadModule = function (gain, index, freq, duration, velocity, finishedLoading, done) {
+    HeavyLoader.prototype.loadModule = function (gain, index, freq, duration, release, velocity, finishedLoading, done) {
         var _this = this;
         if (this.webAssemblySupported) {
             var heavyModule_1 = whitney_music_box_Module();
@@ -28,7 +29,8 @@ var HeavyLoader = (function () {
                 loader_1.audiolib.setFloatParameter("gain", gain);
                 loader_1.audiolib.setFloatParameter("id", index);
                 loader_1.audiolib.setFloatParameter("frequency", freq);
-                loader_1.audiolib.setFloatParameter("duration", freq);
+                loader_1.audiolib.setFloatParameter("duration", duration);
+                loader_1.audiolib.setFloatParameter("release", release);
                 loader_1.stop();
                 _this.heavyArray[index] = { heavyModule: heavyModule_1, loader: loader_1 };
                 finishedLoading();
@@ -60,7 +62,8 @@ var HeavyLoader = (function () {
                 loader.audiolib.setFloatParameter("gain", gain);
                 loader.audiolib.setFloatParameter("id", index);
                 loader.audiolib.setFloatParameter("frequency", freq);
-                loader.audiolib.setFloatParameter("duration", freq);
+                loader.audiolib.setFloatParameter("duration", duration);
+                loader.audiolib.setFloatParameter("release", release);
                 loader.stop();
                 _this.heavyArray[index] = { heavyModule: heavyModule, loader: loader };
                 finishedLoading();
@@ -71,7 +74,7 @@ var HeavyLoader = (function () {
     return HeavyLoader;
 }());
 var sketch = function (p5) {
-    var num_points = 50;
+    var num_points = 48;
     var radius;
     var center;
     var maxCircleWidth;
@@ -87,6 +90,8 @@ var sketch = function (p5) {
     var lastPlayed;
     var baseFreq;
     var millisLastFrame;
+    var timeSlider;
+    var period;
     var buf = 0.00005;
     p5.preload = function () {
         heavyLoader = new HeavyLoader(num_points);
@@ -99,7 +104,7 @@ var sketch = function (p5) {
         for (var i = 0; i < num_points; i++) {
             playing[i] = false;
             lastPlayed[i] = -1;
-            heavyLoader.loadModule(75, i, baseFreq, 200, 0, finishedLoading, doneHook);
+            heavyLoader.loadModule(80 + i * 1 / 6, i, baseFreq * (num_points - i), 150, 150, 0, finishedLoading, doneHook);
         }
     };
     function resize() {
@@ -108,14 +113,18 @@ var sketch = function (p5) {
             x: p5.windowWidth / 2,
             y: p5.windowHeight / 2
         };
+        timeSlider.position(10, p5.windowHeight - 30);
+        timeSlider.style('width', p5.windowWidth - 30 + "px");
         p5.resizeCanvas(p5.windowWidth - 10, p5.windowHeight - 10);
     }
     function finishedLoading() {
         numLoading--;
         if (numLoading === 0) {
-            doneLoading = true;
-            startTime = window.performance.now() - 1000;
-            millisLastFrame = startTime;
+            setTimeout(function () {
+                doneLoading = true;
+                startTime = window.performance.now();
+                millisLastFrame = startTime;
+            }, 1000);
         }
     }
     function doneHook(val) {
@@ -123,8 +132,10 @@ var sketch = function (p5) {
     }
     function playNote(i, velocity) {
         heavyLoader.heavyArray[i].loader.audiolib.setFloatParameter("velocity", velocity);
-        heavyLoader.heavyArray[i].loader.start();
         playing[i] = true;
+        setTimeout(function () {
+            heavyLoader.heavyArray[i].loader.start();
+        }, 0);
     }
     function stopNote(i) {
         playing[i] = false;
@@ -133,7 +144,11 @@ var sketch = function (p5) {
         }, 50);
     }
     p5.setup = function () {
-        rate = 0.05;
+        rate = 0.08;
+        period = num_points * 360;
+        timeSlider = p5.createSlider(0, period + 10, 0, 1);
+        timeSlider.position(10, p5.windowHeight - 30);
+        timeSlider.style('width', p5.windowWidth - 30 + "px");
         canvas = p5.createCanvas(0, 0);
         p5.strokeWeight(0.7);
         p5.colorMode(p5.HSB, 1);
@@ -156,21 +171,16 @@ var sketch = function (p5) {
         }
         var millis = window.performance.now() - startTime;
         var deltaTime = millis - millisLastFrame;
-        var time = millis * rate;
         millisLastFrame = millis;
+        var time = timeSlider.value();
+        timeSlider.value((time + deltaTime * rate) % period);
         for (var i = 0; i < num_points; i++) {
             var angle = time * (1 - i * inverse);
+            if (i == num_points - 1) {
+            }
             var len = radius * (inverse * (i + 1));
             var cos = p5.cos(angle);
             var sin = p5.sin(angle);
-            var x = (center.x + cos * len);
-            var y = (center.y + sin * len);
-            var cWidth = minCircleWidth + (maxCircleWidth - minCircleWidth) * (i + 1) * inverse;
-            var hue = i * inverse;
-            var saturation = 1;
-            var brightness = 1;
-            p5.fill(p5.color(hue, saturation, brightness));
-            p5.ellipse(x, y, cWidth);
             if (lastPlayed[i] > 0 && cos <= -1 + buf && cos >= -1 - buf) {
                 lastPlayed[i] = -1;
             }
@@ -180,6 +190,14 @@ var sketch = function (p5) {
                     lastPlayed[i] = 1;
                 }
             }
+            var x = (center.x + cos * len);
+            var y = (center.y + sin * len);
+            var cWidth = minCircleWidth + (maxCircleWidth - minCircleWidth) * (i + 1) * inverse;
+            var hue = i * inverse;
+            var saturation = 1;
+            var brightness = 1;
+            p5.fill(p5.color(hue, saturation, brightness));
+            p5.ellipse(x, y, cWidth);
         }
     };
 };
