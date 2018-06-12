@@ -92,7 +92,7 @@ var sketch = function (p5) {
     var millisLastFrame;
     var timeSlider;
     var period;
-    var buf = 0.00005;
+    var buf = 0.00008;
     var wait = 1000;
     p5.preload = function () {
         heavyLoader = new HeavyLoader(num_points);
@@ -104,7 +104,7 @@ var sketch = function (p5) {
         for (var i = 0; i < num_points; i++) {
             playing[i] = false;
             lastPlayed[i] = -1;
-            heavyLoader.loadModule(80 + i * 1 / 6, i, baseFreq * (num_points - i), 150, 150, 0, finishedLoading, doneHook);
+            heavyLoader.loadModule(80, i, baseFreq * (num_points - i), 150, 150, 0, finishedLoading, doneHook);
         }
     };
     function resize() {
@@ -124,7 +124,7 @@ var sketch = function (p5) {
                 doneLoading = true;
                 startTime = window.performance.now();
                 millisLastFrame = startTime;
-            }, 1000);
+            }, 1500);
         }
     }
     function doneHook(val) {
@@ -135,7 +135,7 @@ var sketch = function (p5) {
         playing[i] = true;
         setTimeout(function () {
             heavyLoader.heavyArray[i].loader.start();
-        }, 0);
+        }, 1);
     }
     function stopNote(i) {
         playing[i] = false;
@@ -169,7 +169,7 @@ var sketch = function (p5) {
             p5.text("Loading...", center.x, center.y - 1);
             return;
         }
-        var millis = window.performance.now() - startTime;
+        var millis = window.performance.now() - startTime + 200;
         var deltaTime = millis - millisLastFrame;
         millisLastFrame = millis;
         var time = timeSlider.value();
@@ -192,6 +192,9 @@ var sketch = function (p5) {
             var cWidth = minCircleWidth + (maxCircleWidth - minCircleWidth) * (i + 1) * inverse;
             var hue = i * inverse;
             var saturation = 1;
+            if (millis - lastPlayed[i] < 200) {
+                saturation = 0.2;
+            }
             var brightness = 1;
             p5.fill(p5.color(hue, saturation, brightness));
             p5.ellipse(x, y, cWidth);

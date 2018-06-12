@@ -20,7 +20,7 @@ const sketch = (p5: p5) => {
 	let timeSlider : any;
 	let period : number;
 
-	const buf = 0.00005;
+	const buf = 0.00008;
 	// time before a note can be played again
 	const wait = 1000;
 
@@ -39,7 +39,7 @@ const sketch = (p5: p5) => {
 		for (let i = 0; i < num_points; i++) {
 			playing[i] = false;
 			lastPlayed[i] = -1;
-			heavyLoader.loadModule(80 + i*1/6, i, baseFreq * (num_points - i), 150, 150, 0, finishedLoading, doneHook);
+			heavyLoader.loadModule(80, i, baseFreq * (num_points - i), 150, 150, 0, finishedLoading, doneHook);
 		}
 	}
 
@@ -63,7 +63,7 @@ const sketch = (p5: p5) => {
 				doneLoading = true;
 				startTime = window.performance.now();
 				millisLastFrame = startTime;
-			}, 1000);			
+			}, 1500);			
 		}
 	}
 
@@ -79,7 +79,7 @@ const sketch = (p5: p5) => {
 		// add to end of processing queue
 		setTimeout(() => {
 			heavyLoader.heavyArray[i].loader.start();
-		}, 0)
+		}, 1)
 	}
 
 	function stopNote(i: number) {
@@ -125,7 +125,7 @@ const sketch = (p5: p5) => {
 
 		// @ts-ignore millis between each frame
 		// let deltaTime = window.performance.now() - canvas._pInst._lastFrameTime;
-		let millis = window.performance.now() - startTime;
+		let millis = window.performance.now() - startTime + 200;
 		let deltaTime = millis - millisLastFrame;
 
 		millisLastFrame = millis;
@@ -161,7 +161,12 @@ const sketch = (p5: p5) => {
 
 			let cWidth = minCircleWidth + (maxCircleWidth - minCircleWidth) * (i + 1) * inverse;
 			let hue = i * inverse;
+			//let saturation = 1;
 			let saturation = 1;
+			if (millis - lastPlayed[i] < 200) {
+				saturation = 0.2;
+			}
+
 			let brightness = 1;
 
 			p5.fill(p5.color(hue, saturation, brightness));
