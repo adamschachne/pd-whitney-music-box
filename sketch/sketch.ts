@@ -21,11 +21,13 @@ const sketch = (p5: p5) => {
 	let period : number;
 
 	const buf = 0.00005;
+	// time before a note can be played again
+	const wait = 1000;
 
 	p5.preload = () => {
 		// prepare array of num_points
 		heavyLoader = new HeavyLoader(num_points);
-		console.log(heavyLoader);
+		//console.log(heavyLoader);
 
 		// redo the callback/async system TODO
 		doneLoading = false;
@@ -144,18 +146,12 @@ const sketch = (p5: p5) => {
 			let cos = p5.cos(angle);
 			let sin = p5.sin(angle);
 
-			// free up lastPlayed
-			if (lastPlayed[i] > 0 && cos <= -1 + buf && cos >= -1 - buf) {
-				// console.log("free: ", i)
-				lastPlayed[i] = -1;
-			}
-
 			// check last played and is not playing
-			if (lastPlayed[i] < 0 && !playing[i]) {
+			if (!playing[i] && millis < lastPlayed[i] || millis - lastPlayed[i] > wait) {
 				// check is on strummer
 				if (cos <= 1 + buf && cos >= 1 - buf) {
 					playNote(i, 1);
-					lastPlayed[i] = 1;
+					lastPlayed[i] = millis;
 					// console.log("playing: ", i)
 				}
 			}

@@ -93,9 +93,9 @@ var sketch = function (p5) {
     var timeSlider;
     var period;
     var buf = 0.00005;
+    var wait = 1000;
     p5.preload = function () {
         heavyLoader = new HeavyLoader(num_points);
-        console.log(heavyLoader);
         doneLoading = false;
         numLoading = num_points;
         playing = new Array(num_points);
@@ -181,13 +181,10 @@ var sketch = function (p5) {
             var len = radius * (inverse * (i + 1));
             var cos = p5.cos(angle);
             var sin = p5.sin(angle);
-            if (lastPlayed[i] > 0 && cos <= -1 + buf && cos >= -1 - buf) {
-                lastPlayed[i] = -1;
-            }
-            if (lastPlayed[i] < 0 && !playing[i]) {
+            if (!playing[i] && millis < lastPlayed[i] || millis - lastPlayed[i] > wait) {
                 if (cos <= 1 + buf && cos >= 1 - buf) {
                     playNote(i, 1);
-                    lastPlayed[i] = 1;
+                    lastPlayed[i] = millis;
                 }
             }
             var x = (center.x + cos * len);
