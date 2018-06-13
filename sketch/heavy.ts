@@ -49,7 +49,7 @@ class HeavyLoader {
         loader.audiolib.setFloatParameter("type", 0);
         loader.audiolib.setFloatParameter("frequency", freq);
         loader.audiolib.setFloatParameter("duration", duration);
-        loader.audiolib.setFloatParameter("duration", attack);
+        // loader.audiolib.setFloatParameter("attack", attack);
         loader.audiolib.setFloatParameter("release", release);
         loader.stop();
         // loader.audiolib.setFloatParameter("velocity", velocity);
@@ -90,7 +90,7 @@ class HeavyLoader {
         loader.audiolib.setFloatParameter("type", 0);
         loader.audiolib.setFloatParameter("frequency", freq);
         loader.audiolib.setFloatParameter("duration", duration);
-        loader.audiolib.setFloatParameter("duration", attack);
+        // loader.audiolib.setFloatParameter("attack", attack);
         loader.audiolib.setFloatParameter("release", release);
         loader.stop();
         // loader.audiolib.setFloatParameter("velocity", velocity);      
