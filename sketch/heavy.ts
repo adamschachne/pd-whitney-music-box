@@ -6,15 +6,17 @@ class HeavyLoader {
   webAssemblySupported : boolean;
   heavyArray : Array<{heavyModule : any, loader : any}>;
   numModules : number;
+  audioContext : AudioContext;
 
   constructor(numModules : number) {
     this.numModules = numModules;
     this.heavyArray = new Array(numModules);
     // @ts-ignore    
     this.webAssemblySupported = (typeof WebAssembly === 'object');
+    this.audioContext = new AudioContext();
   }
 
-  loadModule(gain : number, index : number, freq : number, duration : number, release : number, velocity : number, finishedLoading : Function, done : Function) {
+  loadModule(gain : number, index : number, freq : number, duration : number, attack : number, release : number, velocity : number, finishedLoading : Function, done : Function) {
     if (this.webAssemblySupported) {      
         let heavyModule = whitney_music_box_Module();
         let loader;
@@ -22,7 +24,7 @@ class HeavyLoader {
           loader = new heavyModule.AudioLibLoader();
           loader.init({
           // optional: set audio processing block size, default is 2048
-          blockSize: 2048,
+          blockSize: 1024,
           // optional: provide a callback handler for [print] messages
           printHook: (message : string) => {
             // console.log(message);
@@ -38,13 +40,16 @@ class HeavyLoader {
           },
           // optional: pass an existing web audio context, otherwise a new one
           // will be constructed.
-          webAudioContext: null          
+          // webAudioContext: null
+          webAudioContext: this.audioContext          
         });
         loader.start();
         loader.audiolib.setFloatParameter("gain", gain);
         loader.audiolib.setFloatParameter("id", index);
+        loader.audiolib.setFloatParameter("type", 0);
         loader.audiolib.setFloatParameter("frequency", freq);
         loader.audiolib.setFloatParameter("duration", duration);
+        loader.audiolib.setFloatParameter("duration", attack);
         loader.audiolib.setFloatParameter("release", release);
         loader.stop();
         // loader.audiolib.setFloatParameter("velocity", velocity);
@@ -61,7 +66,7 @@ class HeavyLoader {
         let loader = new heavyModule.AudioLibLoader();
         loader.init({
           // optional: set audio processing block size, default is 2048
-          blockSize: 2048,
+          blockSize: 1024,
           // optional: provide a callback handler for [print] messages
           printHook: (message : any) => {
             console.log(message);
@@ -77,13 +82,15 @@ class HeavyLoader {
           },
           // optional: pass an existing web audio context, otherwise a new one
           // will be constructed.
-          webAudioContext: null
+          webAudioContext: this.audioContext
         });
         loader.start();
         loader.audiolib.setFloatParameter("gain", gain);
         loader.audiolib.setFloatParameter("id", index);
+        loader.audiolib.setFloatParameter("type", 0);
         loader.audiolib.setFloatParameter("frequency", freq);
         loader.audiolib.setFloatParameter("duration", duration);
+        loader.audiolib.setFloatParameter("duration", attack);
         loader.audiolib.setFloatParameter("release", release);
         loader.stop();
         // loader.audiolib.setFloatParameter("velocity", velocity);      

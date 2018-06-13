@@ -3,8 +3,9 @@ var HeavyLoader = (function () {
         this.numModules = numModules;
         this.heavyArray = new Array(numModules);
         this.webAssemblySupported = (typeof WebAssembly === 'object');
+        this.audioContext = new AudioContext();
     }
-    HeavyLoader.prototype.loadModule = function (gain, index, freq, duration, release, velocity, finishedLoading, done) {
+    HeavyLoader.prototype.loadModule = function (gain, index, freq, duration, attack, release, velocity, finishedLoading, done) {
         var _this = this;
         if (this.webAssemblySupported) {
             var heavyModule_1 = whitney_music_box_Module();
@@ -12,7 +13,7 @@ var HeavyLoader = (function () {
             heavyModule_1['onRuntimeInitialized'] = function () {
                 loader_1 = new heavyModule_1.AudioLibLoader();
                 loader_1.init({
-                    blockSize: 2048,
+                    blockSize: 1024,
                     printHook: function (message) {
                     },
                     sendHook: function (sendName, floatValue) {
@@ -23,13 +24,15 @@ var HeavyLoader = (function () {
                             console.log(sendName, floatValue);
                         }
                     },
-                    webAudioContext: null
+                    webAudioContext: _this.audioContext
                 });
                 loader_1.start();
                 loader_1.audiolib.setFloatParameter("gain", gain);
                 loader_1.audiolib.setFloatParameter("id", index);
+                loader_1.audiolib.setFloatParameter("type", 0);
                 loader_1.audiolib.setFloatParameter("frequency", freq);
                 loader_1.audiolib.setFloatParameter("duration", duration);
+                loader_1.audiolib.setFloatParameter("duration", attack);
                 loader_1.audiolib.setFloatParameter("release", release);
                 loader_1.stop();
                 _this.heavyArray[index] = { heavyModule: heavyModule_1, loader: loader_1 };
@@ -44,7 +47,7 @@ var HeavyLoader = (function () {
                 var heavyModule = whitney_music_box_AsmModule();
                 var loader = new heavyModule.AudioLibLoader();
                 loader.init({
-                    blockSize: 2048,
+                    blockSize: 1024,
                     printHook: function (message) {
                         console.log(message);
                     },
@@ -56,13 +59,15 @@ var HeavyLoader = (function () {
                             console.log(sendName, floatValue);
                         }
                     },
-                    webAudioContext: null
+                    webAudioContext: _this.audioContext
                 });
                 loader.start();
                 loader.audiolib.setFloatParameter("gain", gain);
                 loader.audiolib.setFloatParameter("id", index);
+                loader.audiolib.setFloatParameter("type", 0);
                 loader.audiolib.setFloatParameter("frequency", freq);
                 loader.audiolib.setFloatParameter("duration", duration);
+                loader.audiolib.setFloatParameter("duration", attack);
                 loader.audiolib.setFloatParameter("release", release);
                 loader.stop();
                 _this.heavyArray[index] = { heavyModule: heavyModule, loader: loader };
@@ -99,6 +104,10 @@ var sketch = function (p5) {
     var millis;
     var deltaTime;
     var time;
+    var angleModLastFrame;
+    var decaySlider;
+    var attack;
+    var release;
     var buf = 0.00008;
     var wait = 1000;
     p5.preload = function () {
@@ -111,10 +120,14 @@ var sketch = function (p5) {
         lastPlayed = new Array(num_points);
         inverted = false;
         baseFreq = 35;
+        angleModLastFrame = Array(num_points);
+        attack = 10;
+        release = 200;
         for (var i = 0; i < num_points; i++) {
+            angleModLastFrame[i] = -1;
             playing[i] = false;
             lastPlayed[i] = -1;
-            heavyLoader.loadModule(80, i, baseFreq * (num_points - i), 150, 150, 0, finishedLoading, doneHook);
+            heavyLoader.loadModule(80, i, baseFreq * (num_points - i), 150, attack, release, 0, finishedLoading, doneHook);
         }
     };
     function resize() {
@@ -145,7 +158,7 @@ var sketch = function (p5) {
         playing[i] = true;
         setTimeout(function () {
             heavyLoader.heavyArray[i].loader.start();
-        }, 1);
+        }, 2 * (num_points - i));
     }
     function stopNote(i) {
         playing[i] = false;
@@ -180,14 +193,16 @@ var sketch = function (p5) {
             var angle = time * (1 - i * inverse);
             var cos = p5.cos(angle);
             var sin = p5.sin(angle);
+            var angleMod = angle % 360;
             if (!paused) {
                 if (!playing[i] && millis < lastPlayed[i] || millis - lastPlayed[i] > wait) {
-                    if (cos <= 1 + buf && cos >= 1 - buf) {
+                    if (angleMod < angleModLastFrame[i] && !p5.mouseIsPressed) {
                         playNote(i, 1);
                         lastPlayed[i] = millis;
                     }
                 }
             }
+            angleModLastFrame[i] = angleMod;
             var len = radius * (inverse * (i + 1));
             var x = (center.x + cos * len);
             var y = (center.y + sin * len);
@@ -202,9 +217,22 @@ var sketch = function (p5) {
             p5.ellipse(x, y, cWidth);
         }
     }
+    function sendAttack(val) {
+        heavyLoader.heavyArray.forEach(function (e, i) {
+            e.loader.audiolib.setFloatParameter("duration", attack + release + 10);
+            e.loader.audiolib.setFloatParameter("attack", val);
+        });
+    }
+    function sendRelease(val) {
+        heavyLoader.heavyArray.forEach(function (e, i) {
+            e.loader.audiolib.setFloatParameter("duration", attack + release + 10);
+            e.loader.audiolib.setFloatParameter("release", val);
+        });
+    }
     p5.setup = function () {
         rate = 0.08;
         period = num_points * 360;
+        p5.color(0);
         timeSlider = p5.createSlider(0, period + 10, 0, 1);
         timeSlider.position(10, p5.windowHeight - 30);
         timeSlider.style('width', p5.windowWidth - 30 + "px");

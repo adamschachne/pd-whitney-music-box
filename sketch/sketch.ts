@@ -26,6 +26,12 @@ const sketch = (p5: p5) => {
 	let millis: number;
 	let deltaTime: number;
 	let time: number;
+	let angleModLastFrame : Array<number>;
+	let decaySlider: any;
+	// let attackSlider: any;
+	// let releaseSlider: any;
+	let attack : number;
+	let release : number;
 
 	const buf = 0.00008;
 	// time before a note can be played again
@@ -44,10 +50,14 @@ const sketch = (p5: p5) => {
 		lastPlayed = new Array(num_points);
 		inverted = false;
 		baseFreq = 35;
+		angleModLastFrame = Array(num_points);
+		attack = 10;
+		release = 200;
 		for (let i = 0; i < num_points; i++) {
+			angleModLastFrame[i] = -1;
 			playing[i] = false;
 			lastPlayed[i] = -1;
-			heavyLoader.loadModule(80, i, baseFreq * (num_points - i), 150, 150, 0, finishedLoading, doneHook);
+			heavyLoader.loadModule(80, i, baseFreq * (num_points - i), 150, attack, release, 0, finishedLoading, doneHook);
 			//heavyLoader.loadModule(80, i, baseFreq + baseFreq * i, 150, 150, 0, finishedLoading, doneHook);
 		}
 	}
@@ -88,7 +98,7 @@ const sketch = (p5: p5) => {
 		// add to end of processing queue
 		setTimeout(() => {
 			heavyLoader.heavyArray[i].loader.start();
-		}, 1)
+		}, 2*(num_points - i))
 	}
 
 	function stopNote(i: number) {
@@ -129,17 +139,20 @@ const sketch = (p5: p5) => {
 			let angle = time * (1 - i * inverse);
 			let cos = p5.cos(angle);
 			let sin = p5.sin(angle);
+			let angleMod = angle % 360;
 
 			if (!paused) {
 				if (!playing[i] && millis < lastPlayed[i] || millis - lastPlayed[i] > wait) {
 					// check is on strummer
-					if (cos <= 1 + buf && cos >= 1 - buf) {
+					if (angleMod < angleModLastFrame[i] && !p5.mouseIsPressed) {
 						playNote(i, 1);
 						lastPlayed[i] = millis;
 						// console.log("playing: ", i)
 					}
 				}
 			}
+
+			angleModLastFrame[i] = angleMod;
 
 			let len = radius * (inverse * (i + 1)); // length from center of canvas
 			let x = (center.x + cos * len);
@@ -160,18 +173,39 @@ const sketch = (p5: p5) => {
 		}
 	}
 
+	function sendAttack(val : number) {
+		heavyLoader.heavyArray.forEach((e, i) => {
+			e.loader.audiolib.setFloatParameter("duration", attack + release + 10);
+			e.loader.audiolib.setFloatParameter("attack", val);
+		});
+	}
+
+	function sendRelease(val : number) {
+		heavyLoader.heavyArray.forEach((e, i) => {
+			e.loader.audiolib.setFloatParameter("duration", attack + release + 10);
+			e.loader.audiolib.setFloatParameter("release", val);
+		});
+	}
+
 	p5.setup = () => {
 		rate = 0.08;
 		period = num_points * 360;
+		p5.color(0);
 		timeSlider = p5.createSlider(0, period + 10, 0, 1);
 		timeSlider.position(10, p5.windowHeight - 30);
 		timeSlider.style('width', p5.windowWidth - 30 + "px");
+
+		// attackSlider = p5.createSlider(0, 100, 10, 1);
+		// attackSlider.position(100, 110);
+
+		// releaseSlider = p5.createSlider(0, 500, 200, 1);
+		// releaseSlider.position(100, 140);
 
 		invertButton = p5.createButton('invert pitches');
 		invertButton.position(100, 80);
 		invertButton.mousePressed(invertPitches);
 
-		pauseButton = p5.createButton('pause');
+		pauseButton = p5.createButton('pause');	
 		pauseButton.position(100, 50);
 		pauseButton.mousePressed(togglePause);
 
@@ -191,6 +225,7 @@ const sketch = (p5: p5) => {
 	}
 
 	p5.draw = () => {
+
 		p5.background(p5.color(0, 0, 0.59));
 		p5.line(center.x, center.y, center.x + radius + maxCircleWidth / 2, center.y);
 
@@ -199,6 +234,19 @@ const sketch = (p5: p5) => {
 			p5.text("Loading...", center.x, center.y - 1);
 			return;
 		}
+
+		// if (attackSlider.value() != attack) {
+		// 	attack = attackSlider.value();
+		// 	sendAttack(attack);
+		// }
+
+		// if (releaseSlider.value() != release) {
+		// 	release = releaseSlider.value()
+		// 	sendAttack(release);
+		// }
+
+		// p5.text("attack: " + attack, 200, 110);
+		// p5.text("release: " + release, 200, 140);
 
 		// @ts-ignore millis between each frame
 		// let deltaTime = window.performance.now() - canvas._pInst._lastFrameTime;
