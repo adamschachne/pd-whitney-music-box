@@ -274,7 +274,7 @@ window.addEventListener('load', () => {
 	const button = document.createElement('button');
 	button.textContent = 'Click to start';
 	button.addEventListener('click', () => {
-		document.body.remove();
+		button.remove();
 		new p5(sketch);
 	});
 	document.body.appendChild(button);

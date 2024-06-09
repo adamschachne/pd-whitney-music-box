@@ -4,7 +4,7 @@
   "description": "",
   "scripts": {
     "start": "live-server --open=./docs",
-    "dev": "concurrently \"live-server --https=./config/module.js --watch=./docs --open=./docs\" \" tsc --watch\"",
+    "dev": "concurrently \"live-server --watch=./docs --open=./docs\" \" tsc --watch\"",
     "build": "tsc"
   },
   "repository": {
