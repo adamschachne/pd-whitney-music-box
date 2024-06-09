@@ -32,7 +32,6 @@ var HeavyLoader = (function () {
                 loader_1.audiolib.setFloatParameter("type", 0);
                 loader_1.audiolib.setFloatParameter("frequency", freq);
                 loader_1.audiolib.setFloatParameter("duration", duration);
-                loader_1.audiolib.setFloatParameter("duration", attack);
                 loader_1.audiolib.setFloatParameter("release", release);
                 loader_1.stop();
                 _this.heavyArray[index] = { heavyModule: heavyModule_1, loader: loader_1 };
@@ -67,7 +66,6 @@ var HeavyLoader = (function () {
                 loader.audiolib.setFloatParameter("type", 0);
                 loader.audiolib.setFloatParameter("frequency", freq);
                 loader.audiolib.setFloatParameter("duration", duration);
-                loader.audiolib.setFloatParameter("duration", attack);
                 loader.audiolib.setFloatParameter("release", release);
                 loader.stop();
                 _this.heavyArray[index] = { heavyModule: heavyModule, loader: loader };
@@ -275,4 +273,12 @@ var sketch = function (p5) {
         drawCircles();
     };
 };
-new p5(sketch);
+window.addEventListener('load', function () {
+    var button = document.createElement('button');
+    button.textContent = 'Click to start';
+    button.addEventListener('click', function () {
+        button.remove();
+        new p5(sketch);
+    });
+    document.body.appendChild(button);
+});

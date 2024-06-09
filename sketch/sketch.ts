@@ -270,4 +270,12 @@ const sketch = (p5: p5) => {
 	}
 }
 
-new p5(sketch);
+window.addEventListener('load', () => {
+	const button = document.createElement('button');
+	button.textContent = 'Click to start';
+	button.addEventListener('click', () => {
+		document.body.remove();
+		new p5(sketch);
+	});
+	document.body.appendChild(button);
+});
